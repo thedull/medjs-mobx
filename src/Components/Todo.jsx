@@ -30,7 +30,6 @@ export default class Todo extends Component {
         const { todoList } = app;
         return (
             <div className="todo-container">
-                <DevTools />
                 <ul>
                     <li>
                         <input
@@ -49,6 +48,7 @@ export default class Todo extends Component {
                         ))
                     }
                 </ul>
+                <DevTools />
             </div>
         );
     }

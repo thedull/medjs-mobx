@@ -2,9 +2,8 @@ const path = require("path"),
     webpack = require("webpack"),
     HtmlWebpackPlugin = require("html-webpack-plugin"),
     ExtractTextPlugin = require("extract-text-webpack-plugin"),
-    CopyWebpackPlugin = require("copy-webpack-plugin"),
-    HOST = "0.0.0.0",
-    PORT = 4040;
+    HOST = process.env.HOST,
+    PORT = process.env.PORT;
 let commonPlugins = [],
     cssExtract = process.env.NODE_ENV === "production"
         ? ExtractTextPlugin.extract({ fallback: "style", use: [ "css", "postcss", "sass" ], })
@@ -27,8 +26,8 @@ module.exports = {
         "./src/Entry",
     ],
     output: {
-        publicPath: 'http://MobX-joaqt23618501.codeanyapp.com:4040/',
         path: path.join(__dirname, "dist"),
+        publicPath: `http://mobx-medjs-thedull.c9users.io:${PORT}/`,
         filename: "[name].js",
         chunkFilename: "[name].[chunkhash:6].chunk.js",
     },
@@ -52,7 +51,7 @@ module.exports = {
             }
         ]
     },
-    plugins: [new CopyWebpackPlugin([{ from: 'src/assets', to: 'assets' }])]
+    plugins: []
 };
 
 if (process.env.NODE_ENV === "production") {

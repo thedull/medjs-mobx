@@ -27,7 +27,6 @@ export default class Main extends Component {
                     <div className="menu">
                         <Link to="/intro">Intro</Link>
                         <Link to="/todo">Todo</Link>
-                        <Link to="/countries">Countries</Link>
                     </div>
                     <div className="sub-item">
                         {this.props.children}

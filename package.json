@@ -4,7 +4,7 @@
     "description": "A react project",
     "main": "index.js",
     "scripts": {
-        "dev": "cross-env NODE_ENV=development webpack-dev-server",
+        "dev": "cross-env NODE_ENV=development webpack-dev-server --host $IP --port $PORT",
         "build": "cross-env NODE_ENV=production webpack"
     },
     "repository": "https://github.com/ybing/react-webpack-mobx.git",
@@ -32,7 +32,6 @@
         "babel-preset-react-hmre": "^1.1.1",
         "babel-preset-stage-2": "^6.22.0",
         "babel-runtime": "^6.22.0",
-        "copy-webpack-plugin": "^4.0.1",
         "cross-env": "^3.1.4",
         "css-loader": "^0.26.1",
         "eslint": "^3.15.0",
