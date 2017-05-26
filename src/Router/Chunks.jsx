@@ -19,3 +19,9 @@ export const todo = (location, callback) => {
         callback(null, require('../Components/Todo').default);
     }, 'todo');
 };
+
+export const countries = (location, callback) => {
+    require.ensure([], (require) => {
+        callback(null, require('../Components/Countries').default);
+    }, 'countries');
+};

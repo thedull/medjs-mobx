@@ -8,6 +8,7 @@ import {
     main,
     intro,
     todo,
+    countries,
 } from './Chunks';
 
 const routes = params => (
@@ -15,6 +16,7 @@ const routes = params => (
         <IndexRoute getComponent={intro} />
         <Route path="/intro" getComponent={intro} params={params} />
         <Route path="/todo" getComponent={todo} params={params} />
+        <Route path="/countries" getComponent={countries} params={params} />
     </Route>
 );
 

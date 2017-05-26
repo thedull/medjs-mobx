@@ -93,3 +93,15 @@ For this workshop We can use any Unix-like environment. In order to avoid some s
     - **Local environment**: http://0.0.0.0:4040
 
     Validate DevTools are working as intended
+
+12) In src/Components/Main.jsx add new link to countries
+13) In src/Router/Index.jsx add countries to chunks import and new route path for countries
+14) In src/Router/Chunks add export for countries. You can duplicate todo's export and change accordingly
+15) Create new Countries component in src/Components. Duplicate Intro.jsx and rename to Countries.jsx
+16) In newly created Countries component:
+    - Comment out syle import
+    - Change class name to Countries
+    - Inside div change the className attribute to `countries-container`
+    - Change the inner HTML inside the div for a dummy text like *"Countries will appear here"*
+    - Import DevTools as usual and add it inside the div
+17) Ensure everything is working OK for new Countries page, including DevTools
