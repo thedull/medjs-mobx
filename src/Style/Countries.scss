@@ -17,4 +17,32 @@
           outline: none;
       }
     }
+
+    .countries-list {
+        ul {
+            list-style-type: none;
+        }
+
+        li {
+            text-align: left;
+            float: left;
+            margin: 2px;
+            border: 1px solid #abc;
+            width: 250px;
+            height: 40px;
+            vertical-align: middle;
+            padding: 5px;
+            cursor: pointer;
+
+            &:hover {
+                background-color: #abc;
+            }
+
+            div {
+              height: 40px;
+              vertical-align: middle;
+              display: table-cell;
+            }
+        }
+    }
 }
