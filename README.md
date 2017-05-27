@@ -207,3 +207,159 @@ For this workshop We can use any Unix-like environment. In order to avoid some s
     export default class Countries extends Component {
     ...
     ```
+33) Let's add some cool styling to our countries list.
+
+    First, we will go to https://www.flag-sprites.com/ This resource provides an elegant way to show the corresponding flag with just its ISO alpha-2 code (which we fortunately have in the API response).
+
+    After following a couple of easy steps we'll be able to download a zipped folder which contains a PNG image with all the flags and two stylesheets whose only difference is that one of them is the minified copy of the other.
+34) Create a new folder inside src called *assets* and upload flags.png into it
+35) Upload flags.css to src/Style and add these properties to the flag class rule:
+    ```
+    .flag {
+        ...
+        background: url('../assets/flags.png') no-repeat;
+        background-position: -1000px -1000px;
+        float: left;
+        margin-top: 3px;
+        margin-right: 10px;
+    }
+    ```
+    Also make sure of changing this file's extension to *.scss*, in order to make it able to be processed by webpack-dev-server without further configuration
+36) In src/Style/Countries.scss add the following rules inside `countries-container`:
+    ```
+    .countries-list {
+        ul {
+            list-style-type: none;
+        }
+        li {
+            text-align: left;
+            float: left;
+            margin: 2px;
+            border: 1px solid #abc;
+            width: 250px;
+            height: 40px;
+            vertical-align: middle;
+            padding: 5px;
+            cursor: pointer;
+            &:hover {
+                background-color: #abc;
+            }
+            div {
+              height: 40px;
+              vertical-align: middle;
+              display: table-cell;
+            }
+        }
+    }
+    ```
+37) In Countries component update the template for each country and add the flags stylesheet import:
+    ```
+    ...
+    import '../Style/flags';
+    ...
+        <li className="list" key={val.alpha3_code}>
+            <img src={blank} className={`flag flag-${val.alpha2_code.toLowerCase()}`} alt={val.name} />
+            <div>{val.name}</div>
+        </li>
+    ```
+38) You might have noticed the `{blank}` in the src attibute. According to the flag-sprites.com instructions, this should correspond to a 1x1 transparent pixel image. Thankfully, http://www.1x1px.me/ got us covered; just pick any color (I preferred 'FFF'), set 0 as the opacity, download the PNG file, and upload it into src/assets as *blank1x1.png*.
+
+    After that, import the image in the Countries component below the flags stylesheet import:
+    ```
+    const blank = require('../assets/blank1x1.png');
+    ```
+39) You should now be getting this error:
+    ```
+    ERROR in ./src/assets/flags.png
+    Module parse failed: /home/ubuntu/workspace/testApp01/src/assets/flags.png
+    Unexpected character '�' (1:0)
+    You may need an appropriate loader to handle this file type.
+    ```
+    It means exactly what's suggested in the last line. We need to add an image handler to our webpack-dev-server. This will help us through:
+    * Run `yarn add image-webpack-loader file-loader -D` to add the corresponding handlers.
+    * In webpack.config.js add a new module rule:
+        ```
+                {
+                    test: /\.(jpe?g|png|gif|svg)$/i,
+                    use: [
+                            {
+                                loader: 'file-loader',
+                                options: {
+                                    query: {
+                                        name:'assets/[name].[ext]'
+                                    }
+                                }
+                            },
+                            {
+                                loader: 'image-webpack-loader',
+                                options: {
+                                    query: {
+                                        mozjpeg: {
+                                            progressive: true,
+                                        },
+                                        gifsicle: {
+                                            interlaced: true,
+                                        },
+                                        optipng: {
+                                            optimizationLevel: 7,
+                                        }
+                                    }
+                                }
+                            }
+                    ]
+                }
+        ```
+    And after compiling we'll automatically get a sweet styling for our countries master view
+40) However -as stated in https://mobx.js.org/best/react-performance.html -, in order to get the best performance from our React app, we need to create dedicated stateless components for the view and its corresponding entries.
+
+    Based on src/Components/Intro create two new files:
+    * src/Components/CountriesListView.jsx
+    * src/Components/CountryItem.jsx
+41) In src/Components/CountriesListView.jsx:
+    - Remove the stylesheet reference
+    - Cut the div whose className is `countries-list` from the Countries component, and paste it in the render function of the CountriesListView component.
+    - Decorate the component with `@observer` and import the decorator correspondingly.
+    - Immediatly after the render function declaration, add the reference to the observable countryList property.
+        ```
+        const { countryList } = this.props;
+        ```
+    - Add the corresponding typechecking on the props as a static method inside the class, as shown:
+        ```
+        static propTypes = {
+            countryList: PropTypes.object.isRequired,
+        };
+        ```
+        Don't forget to import the reference to PropTypes from `react` library at the topmost
+    - And finally, cut everything inside the `<li>` tags and put this instead:
+        ```
+        countryList.map(country => <CountryItem country={country} key={country.alpha3_code} />)
+        ```
+        Also remember to add the reference to the newly created CountryItem component.
+42) In src/Components/CountryItem.jsx:
+    - Paste the cut `li` contents inside the render function
+        ```
+        <li className="list" key={key}>
+            <img src={blank} className={`flag flag-${country.alpha2_code.toLowerCase()}`} alt={country.name} />
+            <div>{country.name}</div>
+        </li>
+        ```
+    - Remove the stylesheet reference
+    - Immediatly after the render function declaration, add the reference to the corresponding reactive props.
+        ```
+        const { country, key } = this.props;
+        ```
+    - Add the corresponding typechecking on the props as a static method inside the class, as shown:
+        ```
+        static propTypes = {
+            country: PropTypes.object.isRequired,
+            key: PropTypes.object.isRequired,
+        };
+        ```
+        Don't forget to import the reference to PropTypes from `react` library at the topmost
+    - Also cut and paste the declaration and requiring for the blank image.
+43. In src/Components/Countries.jsx use the CountriesListView component where the old div used to be
+    ```
+    <CountriesListView countryList={countryList} />
+    ```
+    Remember to import the new component accordingly
+44) After recompiling we should get the same cool styled master view with flags, but with a more efficient component architecture. You can check it out by yourself using the clock DevTool, which will now report less rendering time

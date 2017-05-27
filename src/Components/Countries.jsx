@@ -5,9 +5,12 @@ import React, { Component } from 'react';
 import { observer } from 'mobx-react';
 import DevTools from 'mobx-react-devtools';
 import request from '../Utils/Request';
+
 import { countriesStore } from '../State/Countries';
+import CountriesListView from '../Components/CountriesListView';
 
 import '../Style/Countries';
+import '../Style/flags';
 
 @observer
 export default class Countries extends Component {
@@ -38,17 +41,7 @@ export default class Countries extends Component {
         return (
             <div className="countries-container">
                 <input placeholder="Search..." autoFocus onKeyDown={Countries.handleKeyDown} />
-                <div className="countries-list">
-                    <ul>
-                    {
-                        countryList.map((val, key) => (
-                            <li className="list" key={val.alpha3_code}>
-                                <span>{val.name}</span>
-                            </li>
-                        ))
-                    }
-                    </ul>
-                </div>
+                <CountriesListView countryList={countryList} />
                 <DevTools />
             </div>
         );
