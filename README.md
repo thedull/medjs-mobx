@@ -338,7 +338,7 @@ For this workshop We can use any Unix-like environment. In order to avoid some s
 42) In src/Components/CountryItem.jsx:
     - Paste the cut `li` contents inside the render function
         ```
-        <li className="list" key={key}>
+        <li className="list">
             <img src={blank} className={`flag flag-${country.alpha2_code.toLowerCase()}`} alt={country.name} />
             <div>{country.name}</div>
         </li>
@@ -346,20 +346,325 @@ For this workshop We can use any Unix-like environment. In order to avoid some s
     - Remove the stylesheet reference
     - Immediatly after the render function declaration, add the reference to the corresponding reactive props.
         ```
-        const { country, key } = this.props;
+        const { country } = this.props;
         ```
     - Add the corresponding typechecking on the props as a static method inside the class, as shown:
         ```
         static propTypes = {
             country: PropTypes.object.isRequired,
-            key: PropTypes.object.isRequired,
         };
         ```
         Don't forget to import the reference to PropTypes from `react` library at the topmost
     - Also cut and paste the declaration and requiring for the blank image.
-43. In src/Components/Countries.jsx use the CountriesListView component where the old div used to be
+43) In src/Components/Countries.jsx use the CountriesListView component where the old div used to be
     ```
     <CountriesListView countryList={countryList} />
     ```
     Remember to import the new component accordingly
+
 44) After recompiling we should get the same cool styled master view with flags, but with a more efficient component architecture. You can check it out by yourself using the clock DevTool, which will now report less rendering time
+45) In order to demonstrate computed properties, we are going to add a summary component who's going to display the number of countries found. First of all, create the new CountriesSummary component based on CountriesListView
+46) The newly created src/Components/CountriesSummary.jsx component will look like this:
+    ```
+    import React, { Component, PropTypes } from 'react';
+    import { observer } from 'mobx-react';
+
+    @observer
+    export default class CountriesSummary extends Component {
+        static propTypes = {
+            totalCountries: PropTypes.number.isRequired,
+        };
+
+        render() {
+            const { totalCountries } = this.props;
+            return (
+                <div>
+                    { !!totalCountries &&
+                        <div className="found">
+                            <span>Countries found: {totalCountries}</span>
+                        </div>
+                    }
+                </div>
+            );
+        }
+    }
+    ```
+    It has a have a single reactive prop called totalCountries, which if present will display a div with the total countries found
+47) Also we need to create the computed property in the Countries store by means of decorating the corresponding get method with `@computed` and importing the decorator:
+    ```
+    import { observable, computed } from 'mobx';
+
+    class CountriesStore {
+        @observable countryList = [];
+        @computed get totalCountries() {
+            return this.countryList.length;
+        }
+    }
+    ...
+    ```
+48) In src/Components/Countries.jsx just adding the component reference to the render function, its corresponding import at the top, and the `totalCountries` property retrieval from the store will do the trick:
+    ```
+        render() {
+            const { countryList, totalCountries } = countriesStore;
+            return (
+                ...
+                    <CountriesSummary totalCountries={totalCountries} />
+                    <DevTools />
+                ...
+    ```
+49) And finally a little styling in src/Style/Countries.scss:
+    ```
+    .countries-container {
+        ...
+        .found {
+            margin-top: 25px;
+        }
+    ```
+    So we now should be able to view how many countries match the search criteria through the magic of MobX computed properties
+50) Let's add a country detail view when the user clicks on any country from the list. Initially, we are going to add a `countryclickHandler` function in the CountryItem component, and also declare a dummy implementation which will log the selected country:
+    ```
+    ...
+    handleCountryClick = (country) => {
+        console.log(country);
+    }
+
+    render() {
+        const { country } = this.props;
+        return (
+            <li className="list" onClick={() => this.handleCountryClick(country)}>
+                ...
+            </li>
+        );
+    }
+    ...
+    ```
+    This works fine, but according to React documentation it can have performance issues since the handler has to be generated as many times as items the list has; so, based on https://facebook.github.io/react/docs/handling-events.html, we should use this approach instead in our src/Components/CountryItem.jsx:
+    ```
+    export default class CountryItem extends Component {
+        ...
+        constructor() {
+            super();
+            this.clickHandler = this.clickHandler.bind(this);
+        }
+
+        clickHandler() {
+            console.log(this.props.country);
+        }
+
+        render() {
+            const { country } = this.props;
+            return (
+                <li className="list" role="menuitem" onClick={this.clickHandler}>
+                    ...
+                </li>
+            );
+        }
+    }
+    ```
+51) However, after clicking on a country and inspecting the console, we notice that we are not getting a simple JSON country object, but an `Object {$mobx: ObservableObjectAdministration}`.
+Luckily, the mobx library has an utility that assists us in the conversion process called `mobx.toJS`. This takes an observable and turns it into its underlying javascript structure. Hence, it's just a matter of importing the corresponding library and invoking it into our click handler:
+    ```
+    clickHandler() {
+        console.log(mobx.toJS(this.props.country));
+    }
+    ```
+    Thus getting the plain country object we wanted to view in the console.
+52) Now we're ready to get down to business, so let's add a new observable property in our Countries store, named `selectedCountry`.
+    ```
+    @observable selectedCountry = {};
+    ```
+53) In src/Components/CountryItem.jsx add a function to fetch the country detail data, which will be invoked by our click handler:
+    ```
+    clickHandler() {
+        const country = mobx.toJS(this.props.country);
+        console.log(country);
+        this.viewDetails(country)
+          .then((res) => {
+              const results = res.geonames[0];
+              console.log(results);
+              countriesStore.selectedCountry = results;
+          });
+    }
+
+    viewDetails = (country) => {
+        console.log(mobx.toJS(country));
+        const val = country.alpha2_code;
+        console.log(`Should find ${val}`);
+        return request(`http://api.geonames.org/countryInfoJSON?lang=en&country=${val}&username=thedull`);
+    }
+    ```
+    As usual, remember to import the corresponding country store and the request utility at the top of the file.
+    ```
+    import request from '../Utils/Request';
+    import { countriesStore } from '../State/Countries';
+    ```
+54) Then, create a new component file in src/Components/CountryDetail.jsx, based on Country component, whose implementation will be:
+    ```
+    import React, { Component, PropTypes } from 'react';
+    import { observer } from 'mobx-react';
+
+    const blank = require('../assets/blank1x1.png');
+
+    @observer
+    export default class CountryDetail extends Component {
+        static propTypes = {
+            selectedCountry: PropTypes.object.isRequired,
+        };
+
+        render() {
+            const { selectedCountry } = this.props;
+            console.log(selectedCountry);
+            return (
+                <div>
+                    {
+                        !!selectedCountry.countryName &&
+                        <div className="selected" >
+                            <div className="details">
+                                <div className="countryHeaderContainer">
+                                    <img src={blank} className={`flag flag-${selectedCountry.countryCode.toLowerCase()}`} alt={selectedCountry.countryName} />
+                                    <span className="countryHeader">{selectedCountry.countryName}</span>
+                                </div>
+                                <ul>
+                                    <li>
+                                        <span className="fieldName">Continent:</span>
+                                        {selectedCountry.continentName}
+                                    </li>
+                                    <li>
+                                        <span className="fieldName">Capital:</span>
+                                        {selectedCountry.capital}
+                                    </li>
+                                    <li>
+                                        <span className="fieldName">Population:</span>
+                                        <span>{selectedCountry.population}</span>
+                                    </li>
+                                    <li>
+                                        <span className="fieldName">Area (km^2):</span>
+                                        <span>{selectedCountry.areaInSqKm}</span>
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+                    }
+                </div>
+            );
+        }
+    }
+    ```
+    It consists essentially of an unordered list of some relevant country data like continent, capital, population, and area, which is populated through corresponding properties in the seletedCountry prop provided at component creation.
+55) And in the render function of our Countries component, add the corresponding assignment for the newly created `selectedCountry` observable, as well as the new CountryDetail component tag:
+    ```
+    render() {
+        const { countryList, selectedCountry, totalCountries } = countriesStore;
+        return (
+            <div className="countries-container">
+                ...
+                <CountryDetail selectedCountry={selectedCountry} />
+                <DevTools />
+            </div>
+        );
+    }
+    ```
+56) After building, searching and clicking on a country we will be able to see detailed infomation about it; however, it won't hurt anybody adding some "wow" effect. That comprises:
+
+    * Adding a static Google map to the detail view:
+    For this task, we will get some help by http://staticmapmaker.com/google/ to generate an image tag which we will add to the render method.
+
+    * Properly formatting numeric fields like area and population:
+    Again, we will use react-number-format package and rewrite those `span` tags into `NumberFormat` (as directed in https://github.com/s-yadav/react-number-format)
+        ```
+        yarn add react-number-format
+        ```
+
+    * And finally, adding some cool rules to our Countries stylesheet.
+
+    So, our src/Component/CountyDetail.jsx will become:
+
+    ```
+        ...
+        const NumberFormat = require('react-number-format');
+        ...
+        @observer
+        export default class CountryDetail extends Component {
+            ...
+            render() {
+                ...
+                const mapSrc = !!selectedCountry.countryName &&
+                    `https://maps.googleapis.com/maps/api/staticmap?center=${selectedCountry.countryName.replace(' ', '+')}&zoom=3&scale=false&size=250x250&maptype=roadmap&format=png&visual_refresh=true&markers=size:mid%7Ccolor:0xff0000%7Clabel:1%7C${selectedCountry.countryName.replace(' ', '+')}`;
+                console.log(selectedCountry);
+                return (
+                    <div>
+                        {
+                            !!selectedCountry.countryName &&
+                            <div className="selected" >
+                                <div className="map">
+                                    <img src={mapSrc} alt={`${selectedCountry.countryName}-map`} />
+                                </div>
+                                <div className="details">
+                                    <div className="countryHeaderContainer">
+                                        <img src={blank} className={`flag flag-${selectedCountry.countryCode.toLowerCase()}`} alt={selectedCountry.countryName} />
+                                        <span className="countryHeader">{selectedCountry.countryName}</span>
+                                    </div>
+                                    <ul>
+                                        <li>
+                                            <span className="fieldName">Continent:</span>
+                                            {selectedCountry.continentName}
+                                        </li>
+                                        <li>
+                                            <span className="fieldName">Capital:</span>
+                                            {selectedCountry.capital}
+                                        </li>
+                                        <li>
+                                            <span className="fieldName">Population:</span>
+                                            <NumberFormat value={selectedCountry.population} displayType={'text'} thousandSeparator />
+                                        </li>
+                                        <li>
+                                            <span className="fieldName">Area (km^2):</span>
+                                            <NumberFormat value={selectedCountry.areaInSqKm} displayType={'text'} thousandSeparator />
+                                        </li>
+                                    </ul>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                );
+            }
+    ```
+
+    And in src/Style/Countries.scss:
+    ```
+    .countries-container {
+        ...
+        .selected {
+            margin-top: 15px;
+            border-top: 1px dotted #abc;
+            width: 650px;
+            ul {
+                list-style-type: none;
+                margin-left: 5px;
+                margin-top: 25px;
+            }
+            .countryHeaderContainer {
+                margin-top: 25px;
+            }
+            .countryHeader {
+                font-size: 30px;
+                font-weight: bold;
+                display: inline-block;
+                width: 250px;
+            }
+            .fieldName {
+                font-weight: bold;
+                font-color: #888;
+                width: 130px;
+                display: inline-block;
+            }
+            .map {
+                float: left;
+                margin: 20px 20px 0 60px;
+            }
+            .details {
+                float: left;
+            }
+        }
+    }
+    ```

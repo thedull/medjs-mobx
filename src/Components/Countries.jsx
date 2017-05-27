@@ -8,6 +8,8 @@ import request from '../Utils/Request';
 
 import { countriesStore } from '../State/Countries';
 import CountriesListView from '../Components/CountriesListView';
+import CountriesSummary from '../Components/CountriesSummary';
+import CountryDetail from '../Components/CountryDetail';
 
 import '../Style/Countries';
 import '../Style/flags';
@@ -37,11 +39,13 @@ export default class Countries extends Component {
     }
 
     render() {
-        const { countryList } = countriesStore;
+        const { countryList, selectedCountry, totalCountries } = countriesStore;
         return (
             <div className="countries-container">
                 <input placeholder="Search..." autoFocus onKeyDown={Countries.handleKeyDown} />
                 <CountriesListView countryList={countryList} />
+                <CountriesSummary totalCountries={totalCountries} />
+                <CountryDetail selectedCountry={selectedCountry} />
                 <DevTools />
             </div>
         );
